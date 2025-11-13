@@ -1,0 +1,51 @@
+# Archivos compilados
+*.o
+*.a
+*.exe
+*.out
+*.so
+*.dll
+*.dylib
+
+# Archivos objeto específicos de Windows
+*_win.o
+*_win.a
+
+# Biblioteca compilada
+lib/*.o
+lib/*.a
+lib/*_win.*
+
+# Ejecutables compilados en examples/
+examples/proceso_padre
+examples/proceso_hijo
+examples/*.exe
+
+# PERO SÍ incluir los archivos fuente .c
+!examples/*.c
+
+# Archivos de log
+*.log
+hijo_debug.log
+
+# Archivos temporales
+*~
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Carpetas de IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Archivos de debug
+*.dSYM/
+
+# No subir readme.txt
+readme.txt
+
+# Archivos de backup
+*.bak
+*.backup

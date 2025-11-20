@@ -29,20 +29,21 @@ LIB_OBJECTS = $(LIB_DIR)/lanzarProcesoPar.o \
 LIBRARY = $(LIB_DIR)/libprocesopar.a
 
 # Ejecutables de ejemplo
-EJEMPLO_HIJO = $(EXAMPLES_DIR)/proceso_hijo
-EJEMPLO_PADRE = $(EXAMPLES_DIR)/proceso_padre
+EJEMPLO_HIJO       = $(EXAMPLES_DIR)/proceso_hijo
+EJEMPLO_PADRE      = $(EXAMPLES_DIR)/proceso_padre
+EJEMPLO_PADRE_MENU = $(EXAMPLES_DIR)/proceso_padre_menu
 
 # Target por defecto: compilar todo
-all: $(LIBRARY) $(EJEMPLO_HIJO) $(EJEMPLO_PADRE)
+all: $(LIBRARY) $(EJEMPLO_HIJO) $(EJEMPLO_PADRE) $(EJEMPLO_PADRE_MENU)
 	@echo ""
 	@echo "==================================="
 	@echo "  Compilación completada!"
 	@echo "==================================="
 	@echo "Biblioteca: $(LIBRARY)"
-	@echo "Ejemplos: $(EJEMPLO_HIJO) y $(EJEMPLO_PADRE)"
+	@echo "Ejemplos: $(EJEMPLO_HIJO), $(EJEMPLO_PADRE) y $(EJEMPLO_PADRE_MENU)"
 	@echo ""
-	@echo "Para ejecutar el ejemplo:"
-	@echo "  cd examples && ./proceso_padre"
+	@echo "Para ejecutar el ejemplo con menú:"
+	@echo "  cd examples && ./proceso_padre_menu"
 	@echo ""
 
 # Crear directorio lib si no existe
@@ -70,21 +71,26 @@ $(EJEMPLO_PADRE): $(EXAMPLES_DIR)/proceso_padre.c $(LIBRARY)
 	@echo "Compilando proceso padre..."
 	$(CC) $(CFLAGS) $< -o $@ -L$(LIB_DIR) -lprocesopar
 
+# Compilar proceso padre con menú (enlazando con la biblioteca)
+$(EJEMPLO_PADRE_MENU): $(EXAMPLES_DIR)/proceso_padre_menu.c $(LIBRARY)
+	@echo "Compilando proceso padre con menú..."
+	$(CC) $(CFLAGS) $< -o $@ -L$(LIB_DIR) -lprocesopar
+
 # Limpiar archivos generados
 clean:
 	@echo "Limpiando archivos generados..."
 	rm -f $(LIB_OBJECTS) $(LIBRARY)
-	rm -f $(EJEMPLO_HIJO) $(EJEMPLO_PADRE)
+	rm -f $(EJEMPLO_HIJO) $(EJEMPLO_PADRE) $(EJEMPLO_PADRE_MENU)
 	@echo "Limpieza completada."
 
 # Ejecutar el ejemplo
 run: all
 	@echo ""
 	@echo "==================================="
-	@echo "  Ejecutando ejemplo..."
+	@echo "  Ejecutando ejemplo con menú..."
 	@echo "==================================="
 	@echo ""
-	cd $(EXAMPLES_DIR) && ./proceso_padre
+	cd $(EXAMPLES_DIR) && ./proceso_padre_menu
 
 # Target para recompilar todo
 rebuild: clean all

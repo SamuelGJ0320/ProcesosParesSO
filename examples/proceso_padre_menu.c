@@ -15,54 +15,61 @@
  * Se llamará cada vez que el proceso hijo envíe algo al padre.
  */
 static Estado_t funcionEscucha(const char *mensaje, int longitud) {
-    printf("\n[PADRE] Mensaje desde o hijo (%d bytes): \"%.*s\"\n",
+    printf("\n[PADRE] Mensaje desde el hijo (%d bytes): \"%.*s\"\n",
            longitud, longitud, mensaje);
     return E_OK;
 }
 
 int main(void) {
-    int opcion;
+    int opcion = 0;
     Estado_t estado;
     ProcesoPar_t *proceso = NULL;   /* será rellenado por lanzarProcesoPar */
 
     printf("===== MENÚ PROCESO PADRE =====\n");
 
-    /* IMPORTANTE:
-     * Este programa se ejecuta desde la carpeta examples/ (make run lo hace así),
-     * por eso la ruta al ejecutable del hijo es ./proceso_hijo
-     */
-    const char *lineaComando[] = {
-        "./proceso_hijo",
-        NULL
-    };
+    /* Lanzar proceso hijo: ruta y argv según plataforma */
+#ifdef _WIN32
+    {
+        const char *lineaComandoWin[] = {
+            "proceso_hijo.exe",
+            NULL
+        };
+        estado = lanzarProcesoPar("proceso_hijo.exe", (char * const *)lineaComandoWin, &proceso);
+    }
+#else
+    {
+        const char *lineaComandoPos[] = {
+            "./proceso_hijo",
+            NULL
+        };
+        estado = lanzarProcesoPar("./proceso_hijo", lineaComandoPos, &proceso);
+    }
+#endif
 
-    /* Lanzar proceso hijo */
-    estado = lanzarProcesoPar("./proceso_hijo", lineaComando, &proceso);
     if (estado != E_OK) {
-        fprintf(stderr,
-                "[ERROR] No se pudo lanzar el proceso hijo. Código: %u\n",
-                estado);
+        fprintf(stderr, "[ERROR] No se pudo lanzar el proceso hijo. Código: %u errno=%d (%s)\n",
+                (unsigned)estado, errno, strerror(errno));
         return EXIT_FAILURE;
     }
 
-    /* DEBUG: mostrar pid y fds en la estructura (Linux) */
+    /* DEBUG: mostrar pid y fds en la estructura (solo POSIX muestra fds) */
 #ifndef _WIN32
-    fprintf(stderr, "[DEBUG][padre_menu] hijo pid=%d pipeEntrada[0]=%d pipeEntrada[1]=%d pipeSalida[0]=%d pipeSalida[1]=%d\n",
+    fprintf(stderr, "[DEBUG][padre_menu] hijo pid=%d pipeEntrada[0]=%d pipeSalida[1]=%d\n",
             (int)proceso->pid,
-            proceso->pipeEntrada[0], proceso->pipeEntrada[1],
-            proceso->pipeSalida[0], proceso->pipeSalida[1]);
+            proceso->pipeEntrada[0], proceso->pipeSalida[1]);
+#else
+    fprintf(stderr, "[DEBUG][padre_menu] hijo pid=%d\n", (int)proceso->pid);
 #endif
 
     /* Establecer función de escucha para respuestas del hijo */
     estado = establecerFuncionDeEscucha(proceso, funcionEscucha);
     if (estado != E_OK) {
-        fprintf(stderr,
-                "[ERROR] No se pudo establecer la función de escucha. Código: %u\n",
-                estado);
+        fprintf(stderr, "[ERROR] No se pudo establecer la función de escucha. Código: %u\n", (unsigned)estado);
         destruirProcesoPar(proceso);
         return EXIT_FAILURE;
     }
 
+    /* Bucle de interacción */
     do {
         printf("\n¿Qué deseas hacer?\n");
         printf("1. Enviar mensaje al proceso hijo\n");
@@ -78,31 +85,30 @@ int main(void) {
         }
 
         if (opcion == 1) {
-            char mensaje[256];
+            char mensaje[512];
+
+            /* limpiar '\n' que dejó scanf */
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF) {}
 
             printf("Escribe tu mensaje (ej. HOLA, PING, SALIR): ");
 
-            /* Limpiar el salto de línea que deja scanf */
-            int c;
-            while ((c = getchar()) == '\n') { /* limpiar salto previo */ }
-            if (c != EOF) {
-                ungetc(c, stdin);
-            }
-
-            /* Leer la línea completa, incluyendo el '\n' */
             if (fgets(mensaje, sizeof(mensaje), stdin) == NULL) {
                 fprintf(stderr, "[ERROR] No se pudo leer el mensaje.\n");
                 continue;
             }
 
-            /* NO quitamos el '\n': el hijo lee líneas con fgets */
-            int len = (int)strlen(mensaje);
+            /* Asegurar que el mensaje termine con '\n' para que el hijo lo lea con fgets */
+            size_t len = strlen(mensaje);
+            if (len == 0) {
+                fprintf(stderr, "[ERROR] Mensaje vacío.\n");
+                continue;
+            }
 
-            estado = enviarMensajeProcesoPar(proceso, mensaje, len);
+            /* enviar mensaje (longitud sin incluir terminador NUL) */
+            estado = enviarMensajeProcesoPar(proceso, mensaje, (int)len);
             if (estado != E_OK) {
-                fprintf(stderr,
-                        "[ERROR] No se pudo enviar el mensaje. Código: %u\n",
-                        estado);
+                fprintf(stderr, "[ERROR] No se pudo enviar el mensaje. Código: %u\n", (unsigned)estado);
             } else {
                 printf("[INFO] Mensaje enviado correctamente.\n");
             }
@@ -113,9 +119,7 @@ int main(void) {
     /* Destruir proceso par */
     estado = destruirProcesoPar(proceso);
     if (estado != E_OK) {
-        fprintf(stderr,
-                "[ERROR] Error al destruir el proceso par. Código: %u\n",
-                estado);
+        fprintf(stderr, "[ERROR] Error al destruir el proceso par. Código: %u\n", (unsigned)estado);
     }
 
     printf("\nProceso padre finalizado.\n");

@@ -3,7 +3,7 @@
 **Asignatura:** Sistemas Operativos  
 **Proyecto:** Biblioteca para comunicación bidireccional entre procesos
 
-## 📖 Descripción
+## Descripción
 
 Este proyecto implementa una **biblioteca de procesos pares** que permite a un proceso padre crear y comunicarse bidireccionalmente con un proceso hijo usando tuberías.
 
@@ -22,7 +22,7 @@ Estado_t establecerFuncionDeEscucha(...) // Recibir mensajes del hijo
 Estado_t destruirProcesoPar(...)         // Terminar proceso hijo
 ```
 
-## 🚀 Compilación y Ejecución
+## Compilación y Ejecución
 
 ### Linux
 
@@ -47,7 +47,7 @@ cd examples
 ./proceso_padre_completo.exe
 
 
-## 🎮 Uso del Programa
+## Uso del Programa
 
 1. **Menú Principal:**
    - Opción 1: Lanzar proceso hijo
@@ -64,7 +64,7 @@ cd examples
    - Escribe `SALIR` para terminar la conversación
 
 
-## 🔧 Verificación
+## Verificación
 
 Para verificar que son procesos diferentes ejecuta en otra terminal:
 
@@ -87,8 +87,9 @@ while ($true) {
 }
 ```
 
-## 🛠️ Requerimientos
+## Requerimientos
 
 - **Linux:** GCC, pthread
 - **Windows:** MinGW-w64 (se instala automáticamente con el script)
+
 - **WSL:** Para compilación cruzada Windows desde Linux

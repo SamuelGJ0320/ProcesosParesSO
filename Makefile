@@ -1,5 +1,4 @@
 # Makefile para Linux
-# Compila la biblioteca ProcesoPar y los programas de ejemplo
 
 # Compilador
 CC = gcc

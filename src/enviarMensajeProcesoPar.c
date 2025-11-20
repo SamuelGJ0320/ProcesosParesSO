@@ -1,7 +1,7 @@
 /**
- * @file enviarMensajeProcesoPar.c
- * @brief Implementación de la función para enviar mensajes al proceso hijo
- */
+* @file 
+* @brief
+*/
 
 #include "../include/ProcesoPar.h"
 #include <string.h>
@@ -13,14 +13,13 @@
 #endif
 
 /**
- * @brief Envía un mensaje al proceso par (hijo)
- */
+* @brief
+*/
 Estado_t enviarMensajeProcesoPar(
     ProcesoPar_t *procesoPar,
     const char *mensaje,
     int longitud
 ) {
-    /* Validar parámetros */
     if (procesoPar == NULL || mensaje == NULL || longitud <= 0) {
         return E_PAR_INC;
     }
@@ -31,39 +30,31 @@ Estado_t enviarMensajeProcesoPar(
     }
 
 #ifdef _WIN32
-    /* ========================================
-     * IMPLEMENTACIÓN PARA WINDOWS
-     * ======================================== */
+// IMPLEMENTACIÓN PARA WINDOWS:
     
     DWORD bytesEscritos;
     BOOL resultado;
 
     /* Escribir en la tubería de salida */
     resultado = WriteFile(
-        procesoPar->hTuberiaSalida,  /* Handle de la tubería */
-        mensaje,                      /* Buffer con el mensaje */
-        longitud,                     /* Número de bytes a escribir */
-        &bytesEscritos,              /* Bytes escritos */
-        NULL                         /* Sin operación asíncrona */
+        procesoPar->hTuberiaSalida,
+        mensaje,
+        longitud,
+        &bytesEscritos,
+        NULL
     );
 
     if (!resultado || bytesEscritos != (DWORD)longitud) {
         return E_ENVIO_FALLO;
     }
-
-    /* Forzar el envío del buffer (flush) */
     FlushFileBuffers(procesoPar->hTuberiaSalida);
 
 #else
-    /* ========================================
-     * IMPLEMENTACIÓN PARA LINUX
-     * ======================================== */
+// IMPLEMENTACIÓN PARA LINUX:
     
     ssize_t bytesEscritos;
 
-    /* Escribir en la tubería de salida
-     * pipeSalida[1] es el extremo de escritura que usa el padre
-     */
+    /* Escribir en la tubería de salida */
     bytesEscritos = write(procesoPar->pipeSalida[1], mensaje, longitud);
 
     if (bytesEscritos == -1 || bytesEscritos != longitud) {

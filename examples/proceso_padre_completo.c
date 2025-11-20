@@ -1,11 +1,6 @@
 /**
- * @file proceso_padre_completo.c
- * @brief Programa principal con menús interactivos para gestionar procesos pares
- * 
- * Este programa implementa un sistema de menús que permite:
- * 1. Lanzar o salir del programa
- * 2. Una vez lanzado el proceso hijo: enviar mensajes o eliminar el proceso
- * 3. Conversación interactiva alternando entre padre e hijo hasta escribir SALIR
+ * @file 
+ * @brief
  */
 
 #include <stdio.h>
@@ -22,80 +17,57 @@
     #define DORMIR(ms) usleep((ms) * 1000)
 #endif
 
-/* Variables globales para gestión de mensajes */
 static char mensajeRecibido[1024] = {0};
 static int hayMensaje = 0;
 
 /**
- * @brief Función callback que se ejecuta cuando el hijo envía un mensaje
+ * @brief
  */
 Estado_t funcionEscucha(const char *mensaje, int longitud) {
-    // Solo procesar mensajes que no sean debug
-    if (strstr(mensaje, "Proceso hijo iniciado") != NULL ||
-        strstr(mensaje, "Esperando mensajes") != NULL ||
-        strstr(mensaje, "Mensaje recibido") != NULL ||
-        strstr(mensaje, "Respuesta enviada") != NULL) {
-        return E_OK; // Ignorar mensajes de debug
-    }
-    
     strncpy(mensajeRecibido, mensaje, longitud);
     mensajeRecibido[longitud] = '\0';
-    // Eliminar salto de línea si existe
+    
     if (longitud > 0 && mensajeRecibido[longitud-1] == '\n') {
         mensajeRecibido[longitud-1] = '\0';
+        longitud--;
     }
+    
+    // Mostrar lo que envía el hijo
+    printf("%s\n", mensajeRecibido);
+    fflush(stdout);
+    
     hayMensaje = 1;
     return E_OK;
 }
 
-/**
- * @brief Función auxiliar para verificar si el proceso hijo sigue activo
- */
-int procesoHijoActivo(ProcesoPar_t *procesoPar) {
-    if (procesoPar == NULL) return 0;
-    
-    #ifdef _WIN32
-    DWORD exitCode;
-    if (GetExitCodeProcess(procesoPar->hProceso, &exitCode)) {
-        return (exitCode == STILL_ACTIVE);
-    }
-    return 0;
-    #else
-    if (procesoPar->pid <= 0) return 0;
-    
-    // Verificar si el proceso sigue existiendo
-    if (kill(procesoPar->pid, 0) == 0) {
-        return 1; // Proceso existe
-    }
-    return 0; // Proceso no existe
-    #endif
-}
 void limpiarBuffer() {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) {}
 }
 
 /**
- * @brief Función auxiliar para esperar por un mensaje del hijo
+ * @brief
  */
 void esperarMensaje() {
     int intentos = 0;
-    while (!hayMensaje && intentos < 30) {
+    hayMensaje = 0; // Reset del flag
+    
+    while (!hayMensaje && intentos < 50) { // Más tiempo de espera
         DORMIR(100);
         intentos++;
     }
     
     if (hayMensaje) {
-        // Solo mostrar la respuesta real, no debug
+        // Mostrar la respuesta del proceso hijo
         if (strlen(mensajeRecibido) > 0) {
-            printf("[HIJO] %s\n", mensajeRecibido);
+            printf("[PADRE] Mensaje recibido: '%s' (%zu bytes)\n", mensajeRecibido, strlen(mensajeRecibido));
         }
         hayMensaje = 0;
     }
 }
 
 /**
- * @brief Muestra el menú principal y retorna la opción seleccionada
+ * @brief
  */
 int mostrarMenuPrincipal() {
     int opcion;
@@ -115,12 +87,12 @@ int mostrarMenuPrincipal() {
 }
 
 /**
- * @brief Muestra el menú de gestión del proceso hijo
+ * @brief 
  */
 int mostrarMenuGestion() {
     int opcion;
     
-    printf("\n=== GESTIÓN PROCESO HIJO ===\n");
+    printf("\n=== GESTIÓN CON EL PROCESO HIJO ===\n");
     printf("1. Conversar con el proceso hijo\n");
     printf("2. Mostrar información de procesos\n");
     printf("3. Eliminar proceso hijo\n");
@@ -136,7 +108,7 @@ int mostrarMenuGestion() {
 }
 
 /**
- * @brief Lanza el proceso hijo
+ * @brief
  */
 ProcesoPar_t* lanzarProcesoHijo() {
     ProcesoPar_t *procesoPar = NULL;
@@ -198,41 +170,44 @@ void conversarConHijo(ProcesoPar_t *procesoPar) {
     Estado_t estado;
     
     printf("\n=== CONVERSACIÓN ===\n");
-    printf("Escribe como PADRE, el proceso hijo responderá automáticamente.\n");
-    printf("Luego escribe como HIJO para simular la respuesta.\n");
+    printf("Escribe como PADRE, luego escribe como HIJO para responder.\n");
+    printf("La comunicación entre procesos es 100%% real y bidireccional.\n");
     printf("Escribe 'SALIR' para terminar la conversación.\n\n");
     
     while (1) {
-        // El usuario escribe como padre
         printf("[PADRE] ");
         if (fgets(mensaje, sizeof(mensaje), stdin) == NULL) {
             printf("Error al leer el mensaje\n");
             continue;
         }
         
-        // Eliminar salto de línea
         char* pos = strchr(mensaje, '\n');
         if (pos) *pos = '\0';
         
         if (strcmp(mensaje, "SALIR") == 0) {
-            // Enviar SALIR al proceso hijo para que termine
-            strcat(mensaje, "\n");
-            enviarMensajeProcesoPar(procesoPar, mensaje, strlen(mensaje));
             printf("Terminando conversación...\n");
             break;
         }
         
-        // Mostrar que el mensaje fue recibido (simular debug)
-        printf("[HIJO] Mensaje recibido: '%s' (%zu bytes)\n", mensaje, strlen(mensaje));
+        // Enviar mensaje al proceso hijo
+        char mensajeConSalto[514];
+        snprintf(mensajeConSalto, sizeof(mensajeConSalto), "%s\n", mensaje);
+        estado = enviarMensajeProcesoPar(procesoPar, mensajeConSalto, strlen(mensajeConSalto));
         
-        // El usuario escribe como hijo (su propia respuesta)
+        if (estado != E_OK) {
+            printf("Error al enviar mensaje al proceso hijo\n");
+            break;
+        }
+        
+        DORMIR(50);
+        
+        // El usuario escribe como hijo
         printf("[HIJO] ");
         if (fgets(mensaje, sizeof(mensaje), stdin) == NULL) {
             printf("Error al leer el mensaje\n");
             continue;
         }
         
-        // Eliminar salto de línea
         pos = strchr(mensaje, '\n');
         if (pos) *pos = '\0';
         
@@ -241,13 +216,22 @@ void conversarConHijo(ProcesoPar_t *procesoPar) {
             break;
         }
         
-        // Mostrar que la respuesta fue enviada (simular el proceso hijo)
-        printf("[PADRE] Mensaje recibido: '%s' (%zu bytes)\n", mensaje, strlen(mensaje));
+        // Enviar comando al hijo para que envíe la respuesta al padre
+        char comandoEnvio[520];
+        snprintf(comandoEnvio, sizeof(comandoEnvio), "ENVIAR:%s\n", mensaje);
+        estado = enviarMensajeProcesoPar(procesoPar, comandoEnvio, strlen(comandoEnvio));
+        
+        if (estado != E_OK) {
+            printf("Error al enviar comando de respuesta al hijo\n");
+            break;
+        }
+        
+        esperarMensaje();
     }
 }
 
 /**
- * @brief Función principal
+ * @brief
  */
 int main(int argc, char *argv[]) {
     (void)argc;
@@ -310,7 +294,11 @@ int main(int argc, char *argv[]) {
                             case 3:
                                 // Eliminar proceso hijo
                                 printf("\nEliminando proceso hijo...\n");
-                                fflush(stdout);  // Forzar que se muestre inmediatamente
+                                fflush(stdout);
+                                
+                                char terminarMsg[] = "TERMINAR_PROCESO\n";
+                                enviarMensajeProcesoPar(procesoPar, terminarMsg, strlen(terminarMsg));
+                                DORMIR(200);
                                 
                                 Estado_t resultado = destruirProcesoPar(procesoPar);
                                 procesoPar = NULL;
@@ -320,7 +308,7 @@ int main(int argc, char *argv[]) {
                                 } else {
                                     printf("Error al eliminar proceso hijo (código: %u)\n", resultado);
                                 }
-                                salirGestion = 1; // Volver al menú principal
+                                salirGestion = 1;
                                 break;
                                 
                             default:
@@ -347,6 +335,5 @@ int main(int argc, char *argv[]) {
                 break;
         }
     }
-    
     return 0;
 }

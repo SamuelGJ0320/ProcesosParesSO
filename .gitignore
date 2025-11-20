@@ -24,10 +24,6 @@ examples/*.exe
 # PERO SÍ incluir los archivos fuente .c
 !examples/*.c
 
-# Archivos de log
-*.log
-hijo_debug.log
-
 # Archivos temporales
 *~
 *.swp
@@ -42,9 +38,6 @@ Thumbs.db
 
 # Archivos de debug
 *.dSYM/
-
-# No subir readme.txt
-readme.txt
 
 # Archivos de backup
 *.bak

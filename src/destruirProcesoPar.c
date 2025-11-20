@@ -1,7 +1,7 @@
 /**
- * @file destruirProcesoPar.c
- * @brief Implementación de la función para destruir un proceso par y liberar recursos
- */
+* @file 
+* @brief
+*/
 
 #include "../include/ProcesoPar.h"
 #include <stdlib.h>
@@ -15,10 +15,9 @@
 #endif
 
 /**
- * @brief Destruye un proceso par y libera todos los recursos
+ * @brief
  */
 Estado_t destruirProcesoPar(ProcesoPar_t *procesoPar) {
-    /* Validar parámetro */
     if (procesoPar == NULL) {
         return E_PAR_INC;
     }
@@ -27,11 +26,8 @@ Estado_t destruirProcesoPar(ProcesoPar_t *procesoPar) {
     procesoPar->activo = 0;
 
 #ifdef _WIN32
-    /* ========================================
-     * IMPLEMENTACIÓN PARA WINDOWS
-     * ======================================== */
-    
-    /* Saltar el cierre de tuberías que causa colgado en Windows */
+// IMPLEMENTACIÓN PARA WINDOWS:
+
     procesoPar->hTuberiaEntrada = NULL;
     procesoPar->hTuberiaSalida = NULL;
 
@@ -55,9 +51,7 @@ Estado_t destruirProcesoPar(ProcesoPar_t *procesoPar) {
     }
 
 #else
-    /* ========================================
-     * IMPLEMENTACIÓN PARA LINUX
-     * ======================================== */
+// IMPLEMENTACIÓN PARA LINUX:
     
     /* Cerrar tuberías */
     if (procesoPar->pipeEntrada[0] != -1) {
@@ -72,21 +66,15 @@ Estado_t destruirProcesoPar(ProcesoPar_t *procesoPar) {
 
     /* Terminar el proceso hijo */
     if (procesoPar->pid > 0) {
-        /* Verificar si el proceso existe primero */
         if (kill(procesoPar->pid, 0) == 0) {
-            /* El proceso existe, intentar terminarlo */
             kill(procesoPar->pid, SIGTERM);
             
-            /* Esperar brevemente que termine */
             int status;
             int result = waitpid(procesoPar->pid, &status, WNOHANG);
             
-            /* Si no terminó inmediatamente, esperar un poco más */
             if (result == 0) {
-                sleep(1);  /* Esperar 1 segundo */
                 result = waitpid(procesoPar->pid, &status, WNOHANG);
-                
-                /* Si aún no terminó, forzar terminación */
+
                 if (result == 0) {
                     kill(procesoPar->pid, SIGKILL);
                     waitpid(procesoPar->pid, &status, 0);
@@ -97,13 +85,8 @@ Estado_t destruirProcesoPar(ProcesoPar_t *procesoPar) {
         procesoPar->pid = -1;
     }
 
-    /* Nota: El hilo de escucha terminará automáticamente cuando se cierren las tuberías
-     * porque es "detached" y la lectura retornará 0 (EOF)
-     */
-
 #endif
 
-    /* Liberar la memoria de la estructura */
     free(procesoPar);
 
     return E_OK;

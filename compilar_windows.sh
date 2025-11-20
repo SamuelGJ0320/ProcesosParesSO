@@ -1,10 +1,4 @@
-#!/bin/bash
-
-# Script para compilar el proyecto para Windows desde WSL usando MinGW
-
-echo "==============================================="
-echo "  Compilando ProcesoPar para Windows (MinGW)"
-echo "==============================================="
+echo "=== Compilando ProcesoPar para Windows (MinGW) ==="
 echo ""
 
 # Verificar si MinGW está instalado

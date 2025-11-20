@@ -1,11 +1,6 @@
 /**
- * @file ProcesoPar.h
- * @brief Biblioteca para crear y gestionar procesos pares con comunicación bidireccional
- * 
- * Esta biblioteca permite crear un proceso hijo desde un proceso padre y establecer
- * comunicación full-duplex a través de tuberías (pipes).
- * 
- * Soporta tanto Windows como Linux mediante compilación condicional.
+ * @file
+ * @brief
  */
 
 #ifndef PROCESOPAR_H
@@ -22,9 +17,9 @@
 
 #include <stddef.h>
 
-/* ============================================================================
+/*
  * DEFINICIÓN DE TIPOS
- * ============================================================================ */
+*/
 
 /**
  * @brief Tipo para códigos de estado/error
@@ -40,58 +35,49 @@ typedef unsigned int Estado_t;
 typedef Estado_t (*FuncionEscucha_t)(const char *mensaje, int longitud);
 
 /**
- * @brief Estructura que representa un proceso par
- * 
- * Contiene toda la información necesaria para gestionar un proceso hijo
- * y su comunicación bidireccional con el proceso padre.
+ * @brief Estructura de un proceso par
  */
 typedef struct ProcesoPar {
     #ifdef _WIN32
         /* === WINDOWS === */
-        HANDLE hProceso;              /* Handle del proceso hijo */
-        HANDLE hHilo;                 /* Handle del hilo principal del proceso hijo */
-        HANDLE hTuberiaEntrada;       /* Handle para leer desde el proceso hijo */
-        HANDLE hTuberiaSalida;        /* Handle para escribir al proceso hijo */
-        HANDLE hHiloEscucha;          /* Handle del hilo de escucha */
-        DWORD dwProcesoId;            /* ID del proceso hijo */
+        HANDLE hProceso;
+        HANDLE hHilo;
+        HANDLE hTuberiaEntrada;
+        HANDLE hTuberiaSalida;
+        HANDLE hHiloEscucha;
+        DWORD dwProcesoId;   
     #else
         /* === LINUX === */
-        pid_t pid;                    /* ID del proceso hijo */
-        int pipeEntrada[2];           /* Tubería para leer desde el hijo: [0]=lectura, [1]=escritura */
-        int pipeSalida[2];            /* Tubería para escribir al hijo: [0]=lectura, [1]=escritura */
-        pthread_t hiloEscucha;        /* Hilo que escucha mensajes del proceso hijo */
+        pid_t pid;
+        int pipeEntrada[2];
+        int pipeSalida[2];
+        pthread_t hiloEscucha;
     #endif
     
-    /* === COMÚN A AMBOS SISTEMAS === */
-    FuncionEscucha_t funcionEscucha;  /* Función callback para procesar mensajes */
-    int activo;                       /* 1 si el proceso está activo, 0 si no */
+    /* === AMBOS SISTEMAS === */
+    FuncionEscucha_t funcionEscucha;
+    int activo;
 } ProcesoPar_t;
 
-/* ============================================================================
- * CÓDIGOS DE ESTADO
- * ============================================================================ */
 
-#define E_OK            0    /* Operación exitosa */
-#define E_PAR_INC       1    /* Parámetro incorrecto */
-#define E_NO_MEMORIA    2    /* No hay memoria disponible */
-#define E_CREAR_PIPE    3    /* Error al crear tubería */
-#define E_CREAR_PROCESO 4    /* Error al crear proceso hijo */
-#define E_ENVIO_FALLO   5    /* Error al enviar mensaje */
-#define E_PROCESO_INACT 6    /* El proceso no está activo */
-#define E_CREAR_HILO    7    /* Error al crear hilo de escucha */
+#define E_OK            0
+#define E_PAR_INC       1
+#define E_NO_MEMORIA    2
+#define E_CREAR_PIPE    3
+#define E_CREAR_PROCESO 4
+#define E_ENVIO_FALLO   5
+#define E_PROCESO_INACT 6
+#define E_CREAR_HILO    7
 
-/* ============================================================================
- * PROTOTIPOS DE FUNCIONES
- * ============================================================================ */
 
+// FUNCIONES:
 /**
  * @brief Lanza un nuevo proceso par (proceso hijo)
  * 
  * Crea un proceso hijo y establece comunicación bidireccional mediante tuberías.
  * 
  * @param nombreArchivoEjecutable Ruta al ejecutable del proceso hijo
- * @param listaLineaComando Array de argumentos (terminado en NULL). El primer
- *                          argumento debe ser el nombre del programa
+ * @param listaLineaComando Array de argumentos (terminado en NULL). El primer argumento debe ser el nombre del programa
  * @param procesoPar Puntero a puntero donde se almacenará la estructura creada
  * @return Estado_t E_OK si tiene éxito, código de error en caso contrario
  * 
@@ -157,4 +143,4 @@ Estado_t establecerFuncionDeEscucha(
     Estado_t (*f)(const char *, int)
 );
 
-#endif /* PROCESOPAR_H */
+#endif

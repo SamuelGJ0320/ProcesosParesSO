@@ -1,7 +1,7 @@
 /**
- * @file lanzarProcesoPar.c
- * @brief Implementación de la función para crear un proceso par
- */
+* @file
+* @brief
+*/
 
 #include "../include/ProcesoPar.h"
 #include <stdlib.h>
@@ -9,17 +9,17 @@
 #include <stdio.h>
 
 #ifdef _WIN32
-    /* Implementación para Windows */
+    // Implementación para Windows
     #include <windows.h>
 #else
-    /* Implementación para Linux */
+    // Implementación para Linux
     #include <unistd.h>
     #include <sys/types.h>
     #include <sys/wait.h>
     #include <pthread.h>
 #endif
 
-/* Declaración de función auxiliar para el hilo de escucha */
+// Declaración de función para el hilo de escucha
 #ifdef _WIN32
 DWORD WINAPI hiloEscucha(LPVOID param);
 #else
@@ -27,32 +27,27 @@ void* hiloEscucha(void* param);
 #endif
 
 /**
- * @brief Lanza un nuevo proceso par (proceso hijo)
- */
+* @brief
+*/
 Estado_t lanzarProcesoPar(
     const char *nombreArchivoEjecutable,
     const char **listaLineaComando,
     ProcesoPar_t **procesoPar
 ) {
-    /* Validar parámetros */
     if (nombreArchivoEjecutable == NULL || procesoPar == NULL) {
         return E_PAR_INC;
     }
 
-    /* Asignar memoria para la estructura ProcesoPar_t */
     ProcesoPar_t *pp = (ProcesoPar_t*)malloc(sizeof(ProcesoPar_t));
     if (pp == NULL) {
         return E_NO_MEMORIA;
     }
 
-    /* Inicializar campos comunes */
     pp->funcionEscucha = NULL;
     pp->activo = 0;
 
 #ifdef _WIN32
-    /* ========================================
-     * IMPLEMENTACIÓN PARA WINDOWS
-     * ======================================== */
+// Implementación para Windows
     
     SECURITY_ATTRIBUTES sa;
     HANDLE hTuberiaLecturaHijo, hTuberiaEscrituraHijo;
@@ -61,18 +56,16 @@ Estado_t lanzarProcesoPar(
     PROCESS_INFORMATION pi;
     BOOL exito;
 
-    /* Configurar atributos de seguridad para que los handles sean heredables */
     sa.nLength = sizeof(SECURITY_ATTRIBUTES);
     sa.bInheritHandle = TRUE;
     sa.lpSecurityDescriptor = NULL;
 
-    /* Crear tubería 1: Padre escribe -> Hijo lee (Salida del padre) */
+    // Crear tubería 1: Padre escribe -> Hijo lee (Salida del padre)
     if (!CreatePipe(&hTuberiaLecturaHijo, &hTuberiaEscrituraPadre, &sa, 0)) {
         free(pp);
         return E_CREAR_PIPE;
     }
 
-    /* Asegurar que el extremo de escritura del padre no sea heredable */
     if (!SetHandleInformation(hTuberiaEscrituraPadre, HANDLE_FLAG_INHERIT, 0)) {
         CloseHandle(hTuberiaLecturaHijo);
         CloseHandle(hTuberiaEscrituraPadre);
@@ -80,7 +73,7 @@ Estado_t lanzarProcesoPar(
         return E_CREAR_PIPE;
     }
 
-    /* Crear tubería 2: Hijo escribe -> Padre lee (Entrada al padre) */
+    // Crear tubería 2: Hijo escribe -> Padre lee (Entrada al padre)
     if (!CreatePipe(&hTuberiaLecturaPadre, &hTuberiaEscrituraHijo, &sa, 0)) {
         CloseHandle(hTuberiaLecturaHijo);
         CloseHandle(hTuberiaEscrituraPadre);
@@ -88,7 +81,6 @@ Estado_t lanzarProcesoPar(
         return E_CREAR_PIPE;
     }
 
-    /* Asegurar que el extremo de lectura del padre no sea heredable */
     if (!SetHandleInformation(hTuberiaLecturaPadre, HANDLE_FLAG_INHERIT, 0)) {
         CloseHandle(hTuberiaLecturaHijo);
         CloseHandle(hTuberiaEscrituraPadre);
@@ -98,7 +90,6 @@ Estado_t lanzarProcesoPar(
         return E_CREAR_PIPE;
     }
 
-    /* Configurar STARTUPINFO */
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
     si.hStdError = hTuberiaEscrituraHijo;
@@ -106,7 +97,7 @@ Estado_t lanzarProcesoPar(
     si.hStdInput = hTuberiaLecturaHijo;
     si.dwFlags |= STARTF_USESTDHANDLES;
 
-    /* Construir línea de comandos */
+    // Construir línea de comandos
     char comandoCompleto[1024] = "";
     if (listaLineaComando != NULL) {
         int i = 0;
@@ -119,19 +110,19 @@ Estado_t lanzarProcesoPar(
         strcpy(comandoCompleto, nombreArchivoEjecutable);
     }
 
-    /* Crear el proceso hijo */
+    // Crear el proceso hijo
     ZeroMemory(&pi, sizeof(pi));
     exito = CreateProcessA(
-        nombreArchivoEjecutable,  /* Nombre del módulo */
-        comandoCompleto,          /* Línea de comandos */
-        NULL,                     /* Atributos de seguridad del proceso */
-        NULL,                     /* Atributos de seguridad del hilo */
-        TRUE,                     /* Heredar handles */
-        0,                        /* Flags de creación */
-        NULL,                     /* Usar ambiente del padre */
-        NULL,                     /* Usar directorio del padre */
-        &si,                      /* STARTUPINFO */
-        &pi                       /* PROCESS_INFORMATION */
+        nombreArchivoEjecutable,
+        comandoCompleto,
+        NULL,
+        NULL,
+        TRUE,
+        0,
+        NULL,
+        NULL,
+        &si,
+        &pi
     );
 
     if (!exito) {
@@ -143,11 +134,9 @@ Estado_t lanzarProcesoPar(
         return E_CREAR_PROCESO;
     }
 
-    /* Cerrar los handles que el padre no necesita */
     CloseHandle(hTuberiaLecturaHijo);
     CloseHandle(hTuberiaEscrituraHijo);
 
-    /* Guardar información en la estructura */
     pp->hProceso = pi.hProcess;
     pp->hHilo = pi.hThread;
     pp->dwProcesoId = pi.dwProcessId;
@@ -157,14 +146,8 @@ Estado_t lanzarProcesoPar(
     pp->activo = 1;
 
 #else
-    /* ========================================
-     * IMPLEMENTACIÓN PARA LINUX
-     * ======================================== */
-    
-    /* Crear tuberías
-     * pipeEntrada: el hijo ESCRIBE aquí, el padre LEE desde aquí
-     * pipeSalida: el padre ESCRIBE aquí, el hijo LEE desde aquí
-     */
+// IMPLEMENTACIÓN PARA LINUX:
+
     if (pipe(pp->pipeEntrada) == -1) {
         free(pp);
         return E_CREAR_PIPE;
@@ -177,11 +160,10 @@ Estado_t lanzarProcesoPar(
         return E_CREAR_PIPE;
     }
 
-    /* Crear el proceso hijo con fork() */
+    // Crear el proceso hijo
     pp->pid = fork();
 
     if (pp->pid == -1) {
-        /* Error al crear proceso */
         close(pp->pipeEntrada[0]);
         close(pp->pipeEntrada[1]);
         close(pp->pipeSalida[0]);
@@ -191,21 +173,17 @@ Estado_t lanzarProcesoPar(
     }
 
     if (pp->pid == 0) {
-        /* ===== CÓDIGO DEL PROCESO HIJO ===== */
         
-        /* Cerrar extremos que el hijo no usa */
-        close(pp->pipeEntrada[0]);  /* El hijo no lee de pipeEntrada */
-        close(pp->pipeSalida[1]);   /* El hijo no escribe en pipeSalida */
+        close(pp->pipeEntrada[0]);
+        close(pp->pipeSalida[1]);
 
-        /* Redirigir stdin al extremo de lectura de pipeSalida */
         dup2(pp->pipeSalida[0], STDIN_FILENO);
         close(pp->pipeSalida[0]);
 
-        /* Redirigir stdout al extremo de escritura de pipeEntrada */
         dup2(pp->pipeEntrada[1], STDOUT_FILENO);
         close(pp->pipeEntrada[1]);
 
-        /* Ejecutar el programa hijo */
+        // Ejecutar el programa hijo
         if (listaLineaComando != NULL) {
             execvp(nombreArchivoEjecutable, (char* const*)listaLineaComando);
         } else {
@@ -213,21 +191,18 @@ Estado_t lanzarProcesoPar(
             execvp(nombreArchivoEjecutable, args);
         }
 
-        /* Si llegamos aquí, execvp falló */
+        // Si llegamos aquí, execvp falló
         perror("execvp");
         exit(1);
     } else {
-        /* ===== CÓDIGO DEL PROCESO PADRE ===== */
-        
-        /* Cerrar extremos que el padre no usa */
-        close(pp->pipeEntrada[1]);  /* El padre no escribe en pipeEntrada */
-        close(pp->pipeSalida[0]);   /* El padre no lee de pipeSalida */
+
+        close(pp->pipeEntrada[1]);
+        close(pp->pipeSalida[0]);
 
         pp->activo = 1;
     }
 #endif
 
-    /* Retornar el puntero al proceso par creado */
     *procesoPar = pp;
     return E_OK;
 }

@@ -1,7 +1,7 @@
 /**
- * @file establecerFuncionDeEscucha.c
- * @brief Implementación de la función para establecer un callback de escucha
- */
+* @file
+* @brief
+*/
 
 #include "../include/ProcesoPar.h"
 #include <stdlib.h>
@@ -13,7 +13,7 @@
     #include <unistd.h>
 #endif
 
-/* Función del hilo que escucha mensajes del proceso hijo */
+// Función del hilo que escucha mensajes del proceso hijo
 #ifdef _WIN32
 DWORD WINAPI hiloEscucha(LPVOID param) {
     ProcesoPar_t *pp = (ProcesoPar_t*)param;
@@ -21,7 +21,6 @@ DWORD WINAPI hiloEscucha(LPVOID param) {
     DWORD bytesLeidos;
 
     while (pp->activo && pp->funcionEscucha != NULL) {
-        /* Leer de la tubería de entrada */
         BOOL resultado = ReadFile(
             pp->hTuberiaEntrada,
             buffer,
@@ -31,11 +30,9 @@ DWORD WINAPI hiloEscucha(LPVOID param) {
         );
 
         if (resultado && bytesLeidos > 0) {
-            buffer[bytesLeidos] = '\0';  /* Terminar la cadena */
-            /* Llamar a la función de escucha del usuario */
+            buffer[bytesLeidos] = '\0';
             pp->funcionEscucha(buffer, bytesLeidos);
         } else {
-            /* Error o fin de archivo */
             break;
         }
     }
@@ -49,20 +46,14 @@ void* hiloEscucha(void* param) {
     ssize_t bytesLeidos;
 
     while (pp->activo && pp->funcionEscucha != NULL) {
-        /* Leer de la tubería de entrada
-         * pipeEntrada[0] es el extremo de lectura que usa el padre
-         */
         bytesLeidos = read(pp->pipeEntrada[0], buffer, sizeof(buffer) - 1);
 
         if (bytesLeidos > 0) {
-            buffer[bytesLeidos] = '\0';  /* Terminar la cadena */
-            /* Llamar a la función de escucha del usuario */
+            buffer[bytesLeidos] = '\0';
             pp->funcionEscucha(buffer, bytesLeidos);
         } else if (bytesLeidos == 0) {
-            /* Fin de archivo - el hijo cerró su extremo */
             break;
         } else {
-            /* Error en la lectura */
             break;
         }
     }
@@ -72,38 +63,32 @@ void* hiloEscucha(void* param) {
 #endif
 
 /**
- * @brief Establece la función de escucha para mensajes entrantes
- */
+* @brief
+*/
 Estado_t establecerFuncionDeEscucha(
     ProcesoPar_t *procesoPar,
     Estado_t (*f)(const char *, int)
 ) {
-    /* Validar parámetros */
     if (procesoPar == NULL || f == NULL) {
         return E_PAR_INC;
     }
 
-    /* Verificar que el proceso esté activo */
     if (!procesoPar->activo) {
         return E_PROCESO_INACT;
     }
-
-    /* Guardar la función de escucha */
     procesoPar->funcionEscucha = f;
 
 #ifdef _WIN32
-    /* ========================================
-     * IMPLEMENTACIÓN PARA WINDOWS
-     * ======================================== */
+// IMPLEMENTACIÓN PARA WINDOWS:
     
-    /* Crear un hilo que escuche mensajes del proceso hijo */
+    // Crear un hilo que escuche mensajes del proceso hijo
     procesoPar->hHiloEscucha = CreateThread(
-        NULL,              /* Atributos de seguridad por defecto */
-        0,                 /* Tamaño de pila por defecto */
-        hiloEscucha,       /* Función del hilo */
-        procesoPar,        /* Parámetro para la función */
-        0,                 /* Flags de creación */
-        NULL               /* No necesitamos el ID del hilo */
+        NULL,
+        0,
+        hiloEscucha,
+        procesoPar,
+        0,
+        NULL
     );
 
     if (procesoPar->hHiloEscucha == NULL) {
@@ -111,16 +96,14 @@ Estado_t establecerFuncionDeEscucha(
     }
 
 #else
-    /* ========================================
-     * IMPLEMENTACIÓN PARA LINUX
-     * ======================================== */
+// IMPLEMENTACIÓN PARA LINUX
     
-    /* Crear un hilo que escuche mensajes del proceso hijo */
+    // Crear un hilo que escuche mensajes del proceso hijo
     int resultado = pthread_create(
-        &procesoPar->hiloEscucha,  /* ID del hilo */
-        NULL,                       /* Atributos por defecto */
-        hiloEscucha,               /* Función del hilo */
-        procesoPar                 /* Parámetro para la función */
+        &procesoPar->hiloEscucha,
+        NULL,
+        hiloEscucha,
+        procesoPar
     );
 
     if (resultado != 0) {

@@ -31,35 +31,22 @@ Estado_t destruirProcesoPar(ProcesoPar_t *procesoPar) {
      * IMPLEMENTACIÓN PARA WINDOWS
      * ======================================== */
     
-    /* Cerrar tuberías primero para que el hilo de escucha termine */
-    if (procesoPar->hTuberiaEntrada != NULL) {
-        CloseHandle(procesoPar->hTuberiaEntrada);
-        procesoPar->hTuberiaEntrada = NULL;
-    }
-
-    if (procesoPar->hTuberiaSalida != NULL) {
-        CloseHandle(procesoPar->hTuberiaSalida);
-        procesoPar->hTuberiaSalida = NULL;
-    }
-
-    /* Esperar a que el hilo de escucha termine (si existe) */
-    if (procesoPar->hHiloEscucha != NULL) {
-        WaitForSingleObject(procesoPar->hHiloEscucha, 2000);  /* Esperar 2 segundos */
-        CloseHandle(procesoPar->hHiloEscucha);
-        procesoPar->hHiloEscucha = NULL;
-    }
+    /* Saltar el cierre de tuberías que causa colgado en Windows */
+    procesoPar->hTuberiaEntrada = NULL;
+    procesoPar->hTuberiaSalida = NULL;
 
     /* Terminar el proceso hijo */
     if (procesoPar->hProceso != NULL) {
-        /* Intentar terminar el proceso suavemente */
         TerminateProcess(procesoPar->hProceso, 0);
-        
-        /* Esperar a que el proceso termine */
-        WaitForSingleObject(procesoPar->hProceso, 2000);  /* Esperar 2 segundos */
-        
-        /* Cerrar handles */
         CloseHandle(procesoPar->hProceso);
         procesoPar->hProceso = NULL;
+    }
+
+    /* Cerrar hilo de escucha */
+    if (procesoPar->hHiloEscucha != NULL) {
+        TerminateThread(procesoPar->hHiloEscucha, 0);
+        CloseHandle(procesoPar->hHiloEscucha);
+        procesoPar->hHiloEscucha = NULL;
     }
 
     if (procesoPar->hHilo != NULL) {
@@ -85,12 +72,27 @@ Estado_t destruirProcesoPar(ProcesoPar_t *procesoPar) {
 
     /* Terminar el proceso hijo */
     if (procesoPar->pid > 0) {
-        /* Enviar señal SIGTERM para terminar suavemente */
-        kill(procesoPar->pid, SIGTERM);
-        
-        /* Esperar a que el proceso hijo termine */
-        int status;
-        waitpid(procesoPar->pid, &status, 0);
+        /* Verificar si el proceso existe primero */
+        if (kill(procesoPar->pid, 0) == 0) {
+            /* El proceso existe, intentar terminarlo */
+            kill(procesoPar->pid, SIGTERM);
+            
+            /* Esperar brevemente que termine */
+            int status;
+            int result = waitpid(procesoPar->pid, &status, WNOHANG);
+            
+            /* Si no terminó inmediatamente, esperar un poco más */
+            if (result == 0) {
+                sleep(1);  /* Esperar 1 segundo */
+                result = waitpid(procesoPar->pid, &status, WNOHANG);
+                
+                /* Si aún no terminó, forzar terminación */
+                if (result == 0) {
+                    kill(procesoPar->pid, SIGKILL);
+                    waitpid(procesoPar->pid, &status, 0);
+                }
+            }
+        }
         
         procesoPar->pid = -1;
     }

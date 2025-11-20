@@ -80,12 +80,6 @@ int main(int argc, char *argv[]) {
             strcpy(respuesta, "PONG\n");
         } else if (strcmp(buffer, "SALIR") == 0) {
             strcpy(respuesta, "ADIOS\n");
-            /* Enviar respuesta y terminar */
-            fputs(respuesta, stdout);
-            fflush(stdout);
-            DEBUG_PRINT("[HIJO] Respuesta enviada: '%s'\n", respuesta);
-            DEBUG_PRINT("[HIJO] Comando SALIR recibido, terminando...\n");
-            break;
         } else {
             /* Eco: devolver el mensaje con prefijo */
             snprintf(respuesta, sizeof(respuesta), "ECO: %s\n", buffer);

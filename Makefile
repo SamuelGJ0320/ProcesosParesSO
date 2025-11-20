@@ -29,21 +29,21 @@ LIB_OBJECTS = $(LIB_DIR)/lanzarProcesoPar.o \
 LIBRARY = $(LIB_DIR)/libprocesopar.a
 
 # Ejecutables de ejemplo
-EJEMPLO_HIJO       = $(EXAMPLES_DIR)/proceso_hijo
-EJEMPLO_PADRE      = $(EXAMPLES_DIR)/proceso_padre
-EJEMPLO_PADRE_MENU = $(EXAMPLES_DIR)/proceso_padre_menu
+EJEMPLO_HIJO           = $(EXAMPLES_DIR)/proceso_hijo
+EJEMPLO_PADRE_COMPLETO = $(EXAMPLES_DIR)/proceso_padre_completo
 
 # Target por defecto: compilar todo
-all: $(LIBRARY) $(EJEMPLO_HIJO) $(EJEMPLO_PADRE) $(EJEMPLO_PADRE_MENU)
+all: $(LIBRARY) $(EJEMPLO_HIJO) $(EJEMPLO_PADRE_COMPLETO)
 	@echo ""
 	@echo "==================================="
 	@echo "  Compilación completada!"
 	@echo "==================================="
 	@echo "Biblioteca: $(LIBRARY)"
-	@echo "Ejemplos: $(EJEMPLO_HIJO), $(EJEMPLO_PADRE) y $(EJEMPLO_PADRE_MENU)"
+	@echo "Ejemplos: $(EJEMPLO_HIJO) y $(EJEMPLO_PADRE_COMPLETO)"
 	@echo ""
-	@echo "Para ejecutar el ejemplo con menú:"
-	@echo "  cd examples && ./proceso_padre_menu"
+	@echo "Para ejecutar el programa principal:"
+	@echo "  cd examples && ./proceso_padre_completo"
+	@echo ""
 	@echo ""
 
 # Crear directorio lib si no existe
@@ -66,31 +66,26 @@ $(EJEMPLO_HIJO): $(EXAMPLES_DIR)/proceso_hijo.c
 	@echo "Compilando proceso hijo..."
 	$(CC) $(CFLAGS) $< -o $@
 
-# Compilar proceso padre (enlazando con la biblioteca)
-$(EJEMPLO_PADRE): $(EXAMPLES_DIR)/proceso_padre.c $(LIBRARY)
-	@echo "Compilando proceso padre..."
-	$(CC) $(CFLAGS) $< -o $@ -L$(LIB_DIR) -lprocesopar
-
-# Compilar proceso padre con menú (enlazando con la biblioteca)
-$(EJEMPLO_PADRE_MENU): $(EXAMPLES_DIR)/proceso_padre_menu.c $(LIBRARY)
-	@echo "Compilando proceso padre con menú..."
+# Compilar proceso padre completo (enlazando con la biblioteca)
+$(EJEMPLO_PADRE_COMPLETO): $(EXAMPLES_DIR)/proceso_padre_completo.c $(LIBRARY)
+	@echo "Compilando proceso padre completo..."
 	$(CC) $(CFLAGS) $< -o $@ -L$(LIB_DIR) -lprocesopar
 
 # Limpiar archivos generados
 clean:
 	@echo "Limpiando archivos generados..."
 	rm -f $(LIB_OBJECTS) $(LIBRARY)
-	rm -f $(EJEMPLO_HIJO) $(EJEMPLO_PADRE) $(EJEMPLO_PADRE_MENU)
+	rm -f $(EJEMPLO_HIJO) $(EJEMPLO_PADRE_COMPLETO)
 	@echo "Limpieza completada."
 
-# Ejecutar el ejemplo
+# Ejecutar el nuevo ejemplo principal
 run: all
 	@echo ""
 	@echo "==================================="
-	@echo "  Ejecutando ejemplo con menú..."
+	@echo "  Ejecutando programa principal..."
 	@echo "==================================="
 	@echo ""
-	cd $(EXAMPLES_DIR) && ./proceso_padre_menu
+	cd $(EXAMPLES_DIR) && ./proceso_padre_completo
 
 # Target para recompilar todo
 rebuild: clean all

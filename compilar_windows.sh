@@ -46,12 +46,12 @@ echo "[4/6] Compilando proceso_hijo.exe..."
 x86_64-w64-mingw32-gcc -Wall -Wextra -I./include examples/proceso_hijo.c -o examples/proceso_hijo.exe
 if [ $? -ne 0 ]; then echo "Error compilando proceso_hijo"; exit 1; fi
 
-echo "[5/6] Compilando proceso_padre.exe..."
-x86_64-w64-mingw32-gcc -Wall -Wextra -I./include examples/proceso_padre.c -o examples/proceso_padre.exe -L./lib -lprocesopar_win
-if [ $? -ne 0 ]; then echo "Error compilando proceso_padre"; exit 1; fi
+echo "[5/6] Compilando proceso_padre_completo.exe..."
+x86_64-w64-mingw32-gcc -Wall -Wextra -I./include examples/proceso_padre_completo.c -o examples/proceso_padre_completo.exe -L./lib -lprocesopar_win
+if [ $? -ne 0 ]; then echo "Error compilando proceso_padre_completo"; exit 1; fi
 
 echo "[6/6] Verificando archivos generados..."
-if [ -f "examples/proceso_padre.exe" ] && [ -f "examples/proceso_hijo.exe" ]; then
+if [ -f "examples/proceso_hijo.exe" ] && [ -f "examples/proceso_padre_completo.exe" ]; then
     echo ""
     echo "==============================================="
     echo "  ¡Compilación exitosa!"
@@ -60,15 +60,15 @@ if [ -f "examples/proceso_padre.exe" ] && [ -f "examples/proceso_hijo.exe" ]; th
     echo "Archivos generados:"
     echo "  - lib/libprocesopar_win.a"
     echo "  - examples/proceso_hijo.exe"
-    echo "  - examples/proceso_padre.exe"
+    echo "  - examples/proceso_padre_completo.exe"
     echo ""
-    echo "Para ejecutar en Windows PowerShell:"
+    echo "Para ejecutar el programa en Windows PowerShell:"
     echo "  cd examples"
-    echo "  .\\proceso_padre.exe"
+    echo "  .\\proceso_padre_completo.exe"
     echo ""
     echo "Para ejecutar desde WSL (usando Wine):"
     echo "  cd examples"
-    echo "  wine proceso_padre.exe"
+    echo "  wine proceso_padre_completo.exe"
     echo ""
 else
     echo ""
